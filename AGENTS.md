@@ -54,7 +54,6 @@ See [docs/README.md](docs/README.md) for the documentation index. Guides will be
 When making significant architectural decisions, create an ADR in [docs/decisions/](docs/decisions/). Write one when choosing between competing approaches, adopting/rejecting a major dependency, or establishing a cross-cutting pattern (auth, logging, error handling).
 
 ## Known Gotchas
-- This repo currently ships only Mastra's bootstrap example (weather agent/tool/workflow/scorer) -- treat it as scaffolding to replace, not a pattern to imitate for product logic.
 - `docs/DOMAIN.md` is a stub pending real product requirements -- update it as soon as the actual domain is defined.
 
 ## Resources

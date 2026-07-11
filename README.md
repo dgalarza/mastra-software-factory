@@ -1,30 +1,29 @@
 # software-factory
 
-Welcome to your new [Mastra](https://mastra.ai/) project! We're excited to see what you'll build.
+A software factory built with [Mastra](https://mastra.ai/): a series of AI agents with progressively increasing delegated scope, built station by station in the open.
+
+Station 1 is a **read-only Dependabot dependency-triage agent** — it reads the release notes you never would, classifies the risk of each dependency bump, and posts a recommendation card to Slack. It has no write access anywhere: the GitHub App it uses is scoped read-only, so it *cannot* merge, comment, or mutate the repo even if prompted to.
+
+Checkpoints are tagged at episode act boundaries so you can follow the build commit by commit:
+
+| Tag | State |
+|-----|-------|
+| `ep1-scaffold` | Clean Mastra scaffold + storage + env wiring |
+| `ep1-webhook` | GitHub webhook intake: signature verification, Dependabot filtering, PR parsing |
+| `ep1-channel` | Slack output surface: Block Kit recommendation cards |
+| `ep1-complete` | Full triage loop: webhook → agent → recommendation card with cited evidence |
 
 ## Getting Started
 
-Start the development server:
+Copy `.env.example` to `.env` and fill in your credentials, then start the development server:
 
 ```shell
+pnpm install
 pnpm run dev
 ```
 
-Open [http://localhost:4111](http://localhost:4111) in your browser to access [Mastra Studio](https://mastra.ai/docs/studio/overview). It provides an interactive UI for building and testing your agents, along with a REST API that exposes your Mastra application as a local service. This lets you start building without worrying about integration right away.
-
-You can start editing files inside the `src/mastra` directory. The development server will automatically reload whenever you make changes.
+Open [http://localhost:4111](http://localhost:4111) to access [Mastra Studio](https://mastra.ai/docs/studio/overview) — an interactive UI for building and testing agents, plus a REST API that exposes the application as a local service.
 
 ## Learn more
 
-To learn more about Mastra, visit our [documentation](https://mastra.ai/docs/). Your bootstrapped project includes example code for [agents](https://mastra.ai/docs/agents/overview), [tools](https://mastra.ai/docs/agents/using-tools), [workflows](https://mastra.ai/docs/workflows/overview), [scorers](https://mastra.ai/docs/evals/overview), and [observability](https://mastra.ai/docs/observability/overview).
-
-If you're new to AI agents, check out our [course](https://mastra.ai/learn) and [YouTube videos](https://youtube.com/@mastra-ai). You can also join our [Discord](https://discord.gg/BTYqqHKUrf) community to get help and share your projects.
-
-## Deploy to the Mastra platform
-
-The [Mastra platform](https://projects.mastra.ai) provides two products for deploying and managing AI applications built with the Mastra framework:
-
-- **Studio**: A hosted visual environment for testing agents, running workflows, and inspecting traces
-- **Server**: A production deployment target that runs your Mastra application as an API server
-
-Learn more in the [Mastra platform documentation](https://mastra.ai/docs/mastra-platform/overview).
+To learn more about Mastra, visit the [documentation](https://mastra.ai/docs/) — [agents](https://mastra.ai/docs/agents/overview), [tools](https://mastra.ai/docs/agents/using-tools), [workflows](https://mastra.ai/docs/workflows/overview), [scorers](https://mastra.ai/docs/evals/overview), and [observability](https://mastra.ai/docs/observability/overview).

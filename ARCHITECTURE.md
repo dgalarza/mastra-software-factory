@@ -1,7 +1,7 @@
 # Architecture
 
 ## Overview
-software-factory is a [Mastra](https://mastra.ai/) project for building AI agents, tools, and workflows. As of this writing it contains only Mastra's bootstrapped example (a weather agent, tool, and workflow) -- no product-specific domain logic has been added yet. This document describes the structural conventions Mastra imposes and will be extended as real agents, tools, and workflows are added.
+software-factory is a [Mastra](https://mastra.ai/) project implementing a *software factory*: a series of agents with progressively increasing delegated scope, built station by station. Station 1 is a read-only Dependabot dependency-triage agent. This document describes the structural conventions and will be extended as stations are added.
 
 ## Codemap
 
@@ -10,10 +10,12 @@ All Mastra primitives (agents, tools, workflows, scorers) are registered in `src
 
 Key modules:
 - `index.ts` -- Composition root: registers workflows, agents, scorers, storage, logger, and observability
-- `agents/` -- Agent definitions (e.g. `weather-agent.ts`)
-- `tools/` -- Tool definitions consumed by agents (e.g. `weather-tool.ts`)
-- `workflows/` -- Multi-step workflow definitions built from `createStep`/`createWorkflow` (e.g. `weather-workflow.ts`)
-- `scorers/` -- Eval scorers attached to agents for observability/quality grading (e.g. `weather-scorer.ts`)
+- `agents/` -- Agent definitions
+- `tools/` -- Tool definitions consumed by agents
+- `workflows/` -- Multi-step workflow definitions built from `createStep`/`createWorkflow`
+- `scorers/` -- Eval scorers attached to agents for observability/quality grading
+
+The primitive directories are populated as stations are built; the clean scaffold (tag `ep1-scaffold`) contains only the composition root.
 
 ### `.agents/skills/mastra/` -- Mastra framework skill
 Reference documentation for building with Mastra (core concepts, API references, migration guides, common errors). Load this before doing Mastra-specific work, per `AGENTS.md`.
@@ -28,19 +30,19 @@ Reference documentation for building with Mastra (core concepts, API references,
 
 ## Boundaries
 
-- `src/mastra/index.ts` is the only file that should import from all four primitive directories (`agents/`, `tools/`, `workflows/`, `scorers/`) to wire them together. Individual primitive files should not import each other's siblings directly except where a workflow step needs an agent (e.g. `weather-workflow.ts` calls `mastra.getAgent('weatherAgent')` at runtime rather than importing the agent module directly).
-- Tools are the only place external HTTP calls should live (e.g. `weather-tool.ts` calls the Open-Meteo API). Agents and workflows should not make raw `fetch` calls directly except within a `createStep` execute function, mirroring the existing workflow pattern.
+- `src/mastra/index.ts` is the only file that should import from all four primitive directories (`agents/`, `tools/`, `workflows/`, `scorers/`) to wire them together. Individual primitive files should not import each other's siblings directly except where a workflow step needs an agent (call `mastra.getAgent(...)` at runtime rather than importing the agent module directly).
+- Tools are the only place external HTTP calls should live. Agents and workflows should not make raw `fetch` calls directly except within a `createStep` execute function.
 
 ## Cross-Cutting Concerns
 
 ### Error Handling
-No centralized error-handling layer exists yet. The example workflow throws plain `Error`s from step `execute` functions (e.g. "Location not found"). Follow this pattern until a project-specific error strategy is established.
+No centralized error-handling layer exists yet. Throw plain `Error`s from tool/step `execute` functions until a project-specific error strategy is established.
 
 ### Logging & Observability
 Structured logging via `PinoLogger` (configured in `index.ts`, level `info`). Observability events are exported to both Mastra Storage and the Mastra Platform (if `MASTRA_PLATFORM_ACCESS_TOKEN` is set), with sensitive data redacted via `SensitiveDataFilter`.
 
 ### Authentication & Authorization
-None implemented yet -- this is a bootstrapped example project with no auth layer.
+No server auth layer yet. Inbound webhooks must verify their signatures (e.g. GitHub `X-Hub-Signature-256`) in the route handler before any processing.
 
 ### Configuration
-No `src/config.ts` or environment-based config module exists yet. Model IDs and other settings are currently hardcoded inline (e.g. `model: 'openai/gpt-5-mini'` in `weather-agent.ts`).
+Secrets and per-environment settings come from environment variables -- see `.env.example` for the full list. Model IDs are set inline where agents are defined and frozen per episode.
