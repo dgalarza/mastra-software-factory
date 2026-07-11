@@ -1,0 +1,47 @@
+{
+  "action": "opened",
+  "number": 42,
+  "pull_request": {
+    "url": "https://api.github.com/repos/dgalarza/creatorsignal/pulls/42",
+    "html_url": "https://github.com/dgalarza/creatorsignal/pull/42",
+    "number": 42,
+    "state": "open",
+    "title": "Bump rack from 2.2.8 to 2.2.10",
+    "user": {
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "body": "Bumps [rack](https://github.com/rack/rack) from 2.2.8 to 2.2.10.\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a href=\"https://github.com/rack/rack/blob/main/CHANGELOG.md\">rack's changelog</a>.</em></p>\n<blockquote>\n<h2>[2.2.10] - 2024-10-14</h2>\n<h3>Security</h3>\n</blockquote>\n</details>\n<br />\n\n[![Dependabot compatibility score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=rack&package-manager=bundler&previous-version=2.2.8&new-version=2.2.10)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't alter it yourself.",
+    "created_at": "2026-07-10T09:03:11Z",
+    "updated_at": "2026-07-10T09:03:11Z",
+    "head": {
+      "ref": "dependabot/bundler/rack-2.2.10",
+      "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "9049f1265b7d61be4a8904a9a27120d2064dab3b"
+    },
+    "additions": 3,
+    "deletions": 3,
+    "changed_files": 1
+  },
+  "repository": {
+    "id": 186853002,
+    "name": "creatorsignal",
+    "full_name": "dgalarza/creatorsignal",
+    "private": true,
+    "owner": {
+      "login": "dgalarza",
+      "type": "User"
+    },
+    "default_branch": "main"
+  },
+  "sender": {
+    "login": "dependabot[bot]",
+    "type": "Bot"
+  },
+  "installation": {
+    "id": 12345678
+  }
+}

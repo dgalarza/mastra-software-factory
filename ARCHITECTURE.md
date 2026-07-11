@@ -9,11 +9,15 @@ software-factory is a [Mastra](https://mastra.ai/) project implementing a *softw
 All Mastra primitives (agents, tools, workflows, scorers) are registered in `src/mastra/index.ts`, which constructs and exports the `Mastra` instance. This is the single composition root for the app.
 
 Key modules:
-- `index.ts` -- Composition root: registers workflows, agents, scorers, storage, logger, and observability
+- `index.ts` -- Composition root: registers workflows, agents, scorers, server routes, storage, logger, and observability
 - `agents/` -- Agent definitions
 - `tools/` -- Tool definitions consumed by agents
 - `workflows/` -- Multi-step workflow definitions built from `createStep`/`createWorkflow`
 - `scorers/` -- Eval scorers attached to agents for observability/quality grading
+- `routes/` -- Custom HTTP endpoints (`registerApiRoute`), e.g. the GitHub webhook intake
+
+### `src/lib/` -- Framework-free helpers
+Pure functions and external-service clients with no Mastra dependency (signature verification, Dependabot PR parsing). Unit-tested directly in `test/`.
 
 The primitive directories are populated as stations are built; the clean scaffold (tag `ep1-scaffold`) contains only the composition root.
 
@@ -25,7 +29,8 @@ Reference documentation for building with Mastra (core concepts, API references,
 - All agents, tools, workflows, and scorers must be registered in `src/mastra/index.ts` -- there is no auto-discovery.
 - Storage is a `MastraCompositeStore`: a default `LibSQLStore` (`file:./mastra.db`) plus a `DuckDBStore` scoped to the `observability` domain. Do not instantiate ad-hoc storage elsewhere.
 - Observability is centrally configured in `index.ts` with a `SensitiveDataFilter` span processor -- sensitive data (passwords, tokens, keys) is redacted before export. Do not bypass this by logging raw request/response payloads elsewhere.
-- There is no custom HTTP server or routing layer -- the `mastra dev`/`mastra build`/`mastra start` scripts (via `@mastra/core`) own the runtime.
+- The `mastra dev`/`mastra build`/`mastra start` scripts (via `@mastra/core`) own the runtime. Custom HTTP endpoints are registered as `server.apiRoutes` entries (`registerApiRoute`) in `src/mastra/index.ts`, live under `src/mastra/routes/`, and must not use the reserved `/api` prefix.
+- Inbound webhook routes verify the request signature against the raw body bytes before any parsing or processing -- never "temporarily" skip this.
 - There is no ORM or hand-written SQL -- persistence goes through Mastra's storage abstraction only.
 
 ## Boundaries
