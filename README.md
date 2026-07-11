@@ -15,7 +15,7 @@ Checkpoints are tagged at episode act boundaries so you can follow the build com
 
 ## Getting Started
 
-Copy `.env.example` to `.env` and fill in your credentials, then start the development server:
+Copy `.env.example` to `.env` and fill in your credentials — the Slack side can be created in two minutes from [`slack-app-manifest.yaml`](./slack-app-manifest.yaml) (see the [Slack setup guide](./docs/guides/slack-setup.md)). Then start the development server:
 
 ```shell
 pnpm install
