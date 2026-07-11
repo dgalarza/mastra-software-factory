@@ -5,10 +5,11 @@ import { DuckDBStore } from '@mastra/duckdb';
 import { MastraCompositeStore } from '@mastra/core/storage';
 import { Observability, MastraStorageExporter, MastraPlatformExporter, SensitiveDataFilter } from '@mastra/observability';
 import { githubWebhookRoute } from './routes/github-webhook';
+import { slackHelloRoute } from './routes/slack-hello';
 
 export const mastra = new Mastra({
   server: {
-    apiRoutes: [githubWebhookRoute],
+    apiRoutes: [githubWebhookRoute, slackHelloRoute],
   },
   storage: new MastraCompositeStore({
     id: 'composite-storage',
