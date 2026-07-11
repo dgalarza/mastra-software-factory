@@ -1,0 +1,34 @@
+{
+  "name": "software-factory",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "mastra dev",
+    "build": "mastra build",
+    "start": "mastra start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "@mastra/core": "^1.50.1",
+    "@mastra/duckdb": "^1.5.1",
+    "@mastra/evals": "^1.5.1",
+    "@mastra/libsql": "^1.15.1",
+    "@mastra/loggers": "^1.2.0",
+    "@mastra/memory": "^1.22.2",
+    "@mastra/observability": "^1.16.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "mastra": "^1.18.2",
+    "typescript": "^7.0.2"
+  }
+}
