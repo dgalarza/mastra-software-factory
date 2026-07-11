@@ -33,6 +33,16 @@ const MAX_QUOTE_CHARS = 200;
 
 type Block = Record<string, unknown>;
 
+/**
+ * Escape Slack mrkdwn control characters. Citations and reasoning are
+ * derived from third-party release notes — without this, a malicious
+ * changelog line could smuggle `<!channel>` pings or `<url|label>` spoofed
+ * links into a card the team trusts as bot output.
+ */
+export function escapeMrkdwn(text: string): string {
+  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
+
 export function renderTriageCard(card: TriageCard): { text: string; blocks: Block[] } {
   const label = VERDICT_LABEL[card.verdict];
   const bump = `${card.dependency} ${card.fromVersion} → ${card.toVersion}`;
@@ -45,22 +55,27 @@ export function renderTriageCard(card: TriageCard): { text: string; blocks: Bloc
     {
       type: 'section',
       fields: [
-        { type: 'mrkdwn', text: `*Dependency*\n${bump}` },
+        { type: 'mrkdwn', text: `*Dependency*\n${escapeMrkdwn(bump)}` },
         { type: 'mrkdwn', text: `*Risk*\n${card.riskClass}` },
       ],
     },
     {
       type: 'section',
-      text: { type: 'mrkdwn', text: card.reasoning },
+      text: { type: 'mrkdwn', text: escapeMrkdwn(card.reasoning) },
     },
   ];
 
   if (card.citation) {
-    let quote = card.citation.quote.trim();
+    // Single line for the quote block: collapse whitespace, cap length,
+    // then escape (escaping last so an entity is never split by truncation).
+    let quote = card.citation.quote.trim().replace(/\s+/g, ' ');
     if (quote.length > MAX_QUOTE_CHARS) quote = `${quote.slice(0, MAX_QUOTE_CHARS - 1)}…`;
     blocks.push({
       type: 'section',
-      text: { type: 'mrkdwn', text: `>${quote}\n_— ${card.dependency} ${card.citation.version} release notes_` },
+      text: {
+        type: 'mrkdwn',
+        text: `>${escapeMrkdwn(quote)}\n_— ${escapeMrkdwn(`${card.dependency} ${card.citation.version}`)} release notes_`,
+      },
     });
   }
 

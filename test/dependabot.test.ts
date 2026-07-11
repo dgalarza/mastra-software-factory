@@ -47,8 +47,24 @@ describe('parseDependabotTitle', () => {
     });
   });
 
+  it('parses titles with a conventional-commit prefix (CreatorSignal style)', () => {
+    expect(parseDependabotTitle('chore(deps): bump anthropic from 1.54.1 to 1.55.0')).toEqual({
+      recognized: true,
+      grouped: false,
+      dependency: 'anthropic',
+      fromVersion: '1.54.1',
+      toVersion: '1.55.0',
+    });
+    expect(parseDependabotTitle('chore(deps): bump the rubocop group with 2 updates')).toMatchObject({
+      recognized: true,
+      grouped: true,
+      dependency: 'rubocop',
+    });
+  });
+
   it('rejects non-Dependabot titles', () => {
     expect(parseDependabotTitle('Add user avatars')).toMatchObject({ recognized: false });
+    expect(parseDependabotTitle('fix: from and to handling in parser')).toMatchObject({ recognized: false });
   });
 });
 
@@ -69,6 +85,13 @@ describe('parseDependabotBranch', () => {
 
   it('returns nulls for non-Dependabot branches', () => {
     expect(parseDependabotBranch('feature/add-avatars')).toEqual({ ecosystem: null, directory: null });
+  });
+
+  it('does not mistake slash-bearing GitHub Actions names for directories', () => {
+    expect(parseDependabotBranch('dependabot/github_actions/actions/checkout-4')).toEqual({
+      ecosystem: 'github_actions',
+      directory: null,
+    });
   });
 });
 

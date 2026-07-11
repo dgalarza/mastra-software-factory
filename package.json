@@ -7,7 +7,9 @@
     "test": "vitest run",
     "dev": "mastra dev",
     "build": "mastra build",
-    "start": "mastra start"
+    "start": "mastra start",
+    "audit-queue": "tsx --env-file-if-exists=.env scripts/audit-queue.ts",
+    "consistency": "tsx --env-file-if-exists=.env test/consistency/run-triage.ts"
   },
   "keywords": [],
   "author": "",
@@ -24,11 +26,14 @@
     "@mastra/loggers": "^1.2.0",
     "@mastra/memory": "^1.22.2",
     "@mastra/observability": "^1.16.0",
+    "@octokit/auth-app": "^8.2.0",
+    "@octokit/rest": "^22.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
     "mastra": "^1.18.2",
+    "tsx": "^4.23.0",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }

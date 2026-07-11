@@ -25,10 +25,16 @@ export interface DependabotPr {
   directory: string | null;
 }
 
-// Versions can be requirement ranges with spaces ("~> 6.0"), so match lazily
-// up to the final " to " rather than assuming single tokens.
-const SINGLE_BUMP = /^(?:Bump|Update|Upgrade)\s+(\S+)\s+(?:requirement\s+)?from\s+(.+?)\s+to\s+(.+?)(?:\s+in\s+\S+)?$/i;
-const GROUPED_BUMP = /^Bump the (\S+) group\b/i;
+// Repos that set a commit-message prefix get titles like
+// "chore(deps): bump rack from 2.2.8 to 2.2.10" — allow one leading
+// conventional-commit prefix. Versions can be requirement ranges with
+// spaces ("~> 6.0"), so match lazily up to the final " to ".
+const PREFIX = /^(?:[a-z]+(?:\([^)]*\))?!?:\s+)?/i;
+const SINGLE_BUMP = new RegExp(
+  PREFIX.source + /(?:Bump|Update|Upgrade)\s+(\S+)\s+(?:requirement\s+)?from\s+(.+?)\s+to\s+(.+?)(?:\s+in\s+\S+)?$/.source,
+  'i',
+);
+const GROUPED_BUMP = new RegExp(PREFIX.source + /(?:Bump|Update|Upgrade) the (\S+) group\b/.source, 'i');
 
 export function parseDependabotTitle(title: string): Pick<DependabotPr, 'recognized' | 'grouped' | 'dependency' | 'fromVersion' | 'toVersion'> {
   const grouped = GROUPED_BUMP.exec(title);
@@ -51,13 +57,15 @@ export function parseDependabotTitle(title: string): Pick<DependabotPr, 'recogni
 export function parseDependabotBranch(branch: string): Pick<DependabotPr, 'ecosystem' | 'directory'> {
   // dependabot/bundler/rack-2.2.10
   // dependabot/npm_and_yarn/app/left-pad-1.3.0
-  // dependabot/github_actions/actions/checkout-4
   const parts = branch.split('/');
   if (parts[0] !== 'dependabot' || parts.length < 3) {
     return { ecosystem: null, directory: null };
   }
   const ecosystem = parts[1];
-  const directory = parts.length > 3 ? parts.slice(2, -1).join('/') : null;
+  // GitHub Actions dependency names contain slashes themselves
+  // (dependabot/github_actions/actions/checkout-4 bumps "actions/checkout"),
+  // so middle segments are the dependency, not a directory.
+  const directory = ecosystem !== 'github_actions' && parts.length > 3 ? parts.slice(2, -1).join('/') : null;
   return { ecosystem, directory };
 }
 

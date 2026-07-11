@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project
-software-factory -- a [Mastra](https://mastra.ai/) project for building AI agents, tools, and workflows. Currently contains only Mastra's bootstrapped weather example; no product-specific domain has been defined yet.
+software-factory -- a [Mastra](https://mastra.ai/) project implementing a software factory: agents with progressively increasing delegated scope, built station by station. Station 1 is a read-only Dependabot triage agent (webhook intake → triage agent + tools → Slack recommendation card). See [docs/DOMAIN.md](docs/DOMAIN.md) for the domain model.
 
 ## CRITICAL: Load the `mastra` skill first
 Load the `mastra` skill BEFORE any Mastra work. Never rely on cached knowledge of Mastra APIs -- they change between versions.
@@ -23,11 +23,16 @@ Before making changes, run through these steps to orient on a fresh context:
 6. If anything is broken, fix that before starting new work
 
 ## Test
-No test suite exists yet (`pnpm test` is a placeholder that exits with an error). Add real tests as agents/tools/workflows are built.
+```bash
+pnpm test                                  # vitest unit suite (offline, deterministic)
+pnpm consistency <owner/repo> <pr> [n=10]  # N-run triage consistency harness (real APIs + model)
+pnpm audit-queue <owner/repo>              # list open Dependabot PRs with parsed bump fields
+```
+The consistency harness is the record-ready gate: green N/N (same verdict, same cited line) before freezing model/prompt. It needs `OPENAI_API_KEY` plus GitHub credentials in `.env`.
 
 ## Architecture
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full codemap.
-See [Domain Knowledge](docs/DOMAIN.md) for business concepts, terminology, and workflows (currently a stub).
+See [Domain Knowledge](docs/DOMAIN.md) for business concepts, terminology, and workflows.
 
 - All agents, tools, workflows, and scorers must be registered in `src/mastra/index.ts`
 - Storage is a `MastraCompositeStore` (LibSQL default + DuckDB for observability) -- configured centrally in `index.ts`
@@ -54,7 +59,10 @@ See [docs/README.md](docs/README.md) for the documentation index. Guides will be
 When making significant architectural decisions, create an ADR in [docs/decisions/](docs/decisions/). Write one when choosing between competing approaches, adopting/rejecting a major dependency, or establishing a cross-cutting pattern (auth, logging, error handling).
 
 ## Known Gotchas
-- `docs/DOMAIN.md` is a stub pending real product requirements -- update it as soon as the actual domain is defined.
+- The triage agent's model and instructions are frozen for Episode 1 (`openai/gpt-5.2`) -- re-run `pnpm consistency` before and after any change to either. See [ADR 002](docs/decisions/002-workflow-intake-over-signals.md).
+- Dependabot PR titles on CreatorSignal carry a `chore(deps):` prefix -- the parser in `src/lib/dependabot.ts` handles both prefixed and bare conventions; keep tests for both.
+- Custom server routes must NOT start with `/api` (reserved by Mastra) and need `requiresAuth: false` to accept unauthenticated webhooks.
+- `pnpm test` stays offline/deterministic -- anything that hits real APIs or the model belongs in `pnpm consistency` or scripts, not the unit suite.
 
 ## Resources
 - [Mastra Documentation](https://mastra.ai/llms.txt)

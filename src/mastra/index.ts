@@ -6,10 +6,19 @@ import { MastraCompositeStore } from '@mastra/core/storage';
 import { Observability, MastraStorageExporter, MastraPlatformExporter, SensitiveDataFilter } from '@mastra/observability';
 import { githubWebhookRoute } from './routes/github-webhook';
 import { slackHelloRoute } from './routes/slack-hello';
+import { triageAgent } from './agents/triage';
+import { triageWorkflow } from './workflows/triage';
 
 export const mastra = new Mastra({
+  agents: { triageAgent },
+  workflows: { triageWorkflow },
   server: {
-    apiRoutes: [githubWebhookRoute, slackHelloRoute],
+    apiRoutes: [
+      githubWebhookRoute,
+      // Wiring check only — never shipped: an unauthenticated route that can
+      // post to the factory channel has no business in a production build.
+      ...(process.env.NODE_ENV === 'production' ? [] : [slackHelloRoute]),
+    ],
   },
   storage: new MastraCompositeStore({
     id: 'composite-storage',

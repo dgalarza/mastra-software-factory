@@ -61,6 +61,30 @@ describe('renderTriageCard', () => {
     const context = (blocks.at(-1) as any).elements[0].text;
     expect(context).toContain(holdCard.prUrl);
   });
+
+  it('escapes mrkdwn control characters in notes-derived content', () => {
+    const { blocks } = renderTriageCard({
+      ...holdCard,
+      reasoning: 'Watch out for <!channel> & <https://evil.example|fake links>.',
+      citation: { version: '2.2.9', quote: 'Fixed CVE <!channel> patch now <https://evil.example/creds|Upgrade>.' },
+    });
+    const reasoning = (blocks[2] as any).text.text;
+    const quote = (blocks[3] as any).text.text;
+    for (const rendered of [reasoning, quote]) {
+      expect(rendered).not.toContain('<!channel>');
+      expect(rendered).not.toContain('<https://evil.example');
+      expect(rendered).toContain('&lt;');
+    }
+  });
+
+  it('flattens multi-line citations into a single quote line', () => {
+    const { blocks } = renderTriageCard({
+      ...holdCard,
+      citation: { version: '2.2.9', quote: 'line one\nline two' },
+    });
+    const quote = (blocks[3] as any).text.text.split('\n')[0];
+    expect(quote).toBe('>line one line two');
+  });
 });
 
 describe('renderHelloCard', () => {

@@ -4,6 +4,10 @@ import { parseDependabotPr } from '../../lib/dependabot';
 
 const TRIAGED_ACTIONS = new Set(['opened', 'reopened', 'synchronize']);
 
+/** Real pull_request payloads are well under this; Mastra applies no body
+ * limit to custom routes, so cap before buffering the (unauthenticated) body. */
+const MAX_BODY_BYTES = 1_000_000;
+
 /**
  * GitHub webhook intake for Dependabot PRs.
  *
@@ -27,8 +31,16 @@ export const githubWebhookRoute = registerApiRoute('/webhooks/github', {
       return c.json({ error: 'webhook secret not configured' }, 503);
     }
 
+    const contentLength = Number(c.req.header('content-length'));
+    if (!Number.isFinite(contentLength) || contentLength > MAX_BODY_BYTES) {
+      return c.json({ error: 'payload too large' }, 413);
+    }
+
     // The exact bytes GitHub signed — read before any JSON parsing.
     const rawBody = await c.req.text();
+    if (rawBody.length > MAX_BODY_BYTES) {
+      return c.json({ error: 'payload too large' }, 413);
+    }
     const signature = c.req.header('X-Hub-Signature-256');
     if (!verifyGithubSignature(secret, rawBody, signature)) {
       logger?.warn('GitHub webhook rejected: bad signature');
@@ -64,6 +76,13 @@ export const githubWebhookRoute = registerApiRoute('/webhooks/github', {
       ...parsed,
     });
 
-    return c.json({ received: true, repo, prNumber, ...parsed }, 200);
+    // Fire-and-forget: GitHub expects a fast ack, the triage takes as long
+    // as the reading takes. One workflow run per PR event.
+    const workflow = mastra.getWorkflow('triageWorkflow');
+    const run = await workflow.createRun();
+    const { runId } = await run.startAsync({ inputData: { repo, prNumber } });
+    logger?.info('Triage started', { runId, repo, prNumber });
+
+    return c.json({ received: true, runId, repo, prNumber, ...parsed }, 202);
   },
 });
