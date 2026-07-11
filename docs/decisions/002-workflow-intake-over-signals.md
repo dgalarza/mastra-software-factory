@@ -28,3 +28,8 @@ Related decisions made at the same time:
 ## Alternatives Considered
 - **Signals (Option A)** -- rejected for cross-PR thread contamination and the missing per-event structured-output contract; revisit if a station genuinely wants a long-lived, conversational thread per resource.
 - **Bare Express/Hono sidecar server** -- rejected; Mastra's `server.apiRoutes` keeps intake inside the one runtime and visible to Studio.
+
+## Notes from the official docs (reviewed 2026-07-11)
+The signal-providers doc ([mastra.ai/docs/long-running-agents/signal-providers](https://mastra.ai/docs/long-running-agents/signal-providers.md)) corroborates the decision and adds two facts:
+- Signals are **beta**: "Breaking changes may occur without a major version bump until the API is stable." The episode tags are a viewer-facing spine that must keep building from checkout, so core intake should not sit on a beta surface this season.
+- **`@mastra/github-signals`** (npm, 0.2.2) is a production signal provider that watches PRs and notifies threads about comments, review state, CI status, and merges. Its shape — a persistent thread following one PR's life — is wrong for Station 1's fan-out triage but is the natural starting point for **Station 2 (PR review)**; evaluate it there before hand-rolling intake.
