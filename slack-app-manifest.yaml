@@ -2,13 +2,19 @@
 #
 # Create the app from this file: https://api.slack.com/apps → Create New App
 # → "From a manifest" → pick your workspace → paste this YAML.
+# (Updating an existing app: App settings → App Manifest → paste → Save,
+# then REINSTALL the app so the new scopes take effect.)
 # Full setup walkthrough: docs/guides/slack-setup.md
 #
-# Scope note: Station 1 posts recommendation cards and does nothing else, so
-# the only scope requested is chat:write — the same least-privilege posture
-# as the read-only GitHub App. No events, no interactivity, no socket mode.
-# Later stations that answer thread replies will widen this deliberately,
-# on camera.
+# Scope note: the factory posts recommendation cards and answers follow-up
+# questions in each card's thread — so beyond chat:write it needs to HEAR
+# mentions and thread replies (app_mentions:read, channels:history/read,
+# users:read). Still read-and-reply only: no reactions, no DMs, no private
+# channels. Widening scope is always deliberate, same as the GitHub App.
+#
+# Socket Mode is enabled so local development needs no public URL for Slack:
+# after installing, create an App-Level Token (Basic Information → App-Level
+# Tokens → Generate, scope connections:write) and set it as SLACK_APP_TOKEN.
 
 _metadata:
   major_version: 1
@@ -16,7 +22,7 @@ _metadata:
 
 display_information:
   name: Software Factory
-  description: Read-only dependency triage recommendations (Station 1)
+  description: Dependency triage recommendations, with thread Q&A (Station 1)
   background_color: "#1a1d21"
 
 features:
@@ -28,8 +34,16 @@ oauth_config:
   scopes:
     bot:
       - chat:write
+      - app_mentions:read
+      - channels:history
+      - channels:read
+      - users:read
 
 settings:
   org_deploy_enabled: false
-  socket_mode_enabled: false
+  socket_mode_enabled: true
   token_rotation_enabled: false
+  event_subscriptions:
+    bot_events:
+      - app_mention
+      - message.channels

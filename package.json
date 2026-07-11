@@ -19,6 +19,7 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
+    "@chat-adapter/slack": "^4.33.0",
     "@mastra/core": "^1.50.1",
     "@mastra/duckdb": "^1.5.1",
     "@mastra/evals": "^1.5.1",
@@ -28,6 +29,7 @@
     "@mastra/observability": "^1.16.0",
     "@octokit/auth-app": "^8.2.0",
     "@octokit/rest": "^22.0.1",
+    "chat": "^4.33.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

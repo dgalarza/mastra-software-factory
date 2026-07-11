@@ -19,3 +19,4 @@ Architecture Decision Records (ADRs) capture significant decisions and their rat
 
 - [001 - Agent-Ready Documentation Structure](./decisions/001-agent-ready-documentation.md) -- Adopts progressive disclosure docs for agent legibility
 - [002 - Workflow Intake over Signals](./decisions/002-workflow-intake-over-signals.md) -- Why Station 1 triages via a workflow pipeline instead of signal subscriptions
+- [003 - Channels + Per-PR Memory Threads for Slack](./decisions/003-channels-thread-qa.md) -- Thread Q&A: replies to a card are answered from the notes the agent read during that triage

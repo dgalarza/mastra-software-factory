@@ -62,6 +62,8 @@ When making significant architectural decisions, create an ADR in [docs/decision
 - The triage agent's model and instructions are frozen for Episode 1 (`openai/gpt-5.2`) -- re-run `pnpm consistency` before and after any change to either. See [ADR 002](docs/decisions/002-workflow-intake-over-signals.md).
 - Dependabot PR titles on CreatorSignal carry a `chore(deps):` prefix -- the parser in `src/lib/dependabot.ts` handles both prefixed and bare conventions; keep tests for both.
 - Custom server routes must NOT start with `/api` (reserved by Mastra) and need `requiresAuth: false` to accept unauthenticated webhooks.
+- `createSlackAdapter()` throws at construction when its credentials are missing -- always attach `channels` conditionally (see `slackChannels()` in `src/mastra/agents/triage.ts`) so the server boots without Slack creds.
+- Slack thread ↔ memory thread binding needs ALL THREE metadata keys (`channel_platform`, `channel_externalThreadId`, `channel_externalChannelId`) set BEFORE `subscribe()` -- subscribe silently no-ops otherwise, and a missing key makes Channels create a duplicate thread with no triage context. See ADR 003.
 - `pnpm test` stays offline/deterministic -- anything that hits real APIs or the model belongs in `pnpm consistency` or scripts, not the unit suite.
 
 ## Resources
