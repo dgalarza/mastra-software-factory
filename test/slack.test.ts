@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { cardToBlockKit } from '@chat-adapter/slack';
 import { renderTriageCard, renderHelloCard, type TriageCard } from '../src/lib/slack';
+
+/** Render through the same conversion Slack delivery uses, for assertions. */
+function blocksFor(postable: ReturnType<typeof renderTriageCard>) {
+  return cardToBlockKit(postable.card) as any[];
+}
 
 const holdCard: TriageCard = {
   verdict: 'HOLD',
@@ -17,59 +23,59 @@ const holdCard: TriageCard = {
 
 describe('renderTriageCard', () => {
   it('leads with the verdict in the header', () => {
-    const { text, blocks } = renderTriageCard(holdCard);
-    const header = blocks[0] as any;
-    expect(header.type).toBe('header');
-    expect(header.text.text).toContain('⚠️ HOLD');
-    expect(text).toBe('⚠️ HOLD: rack 2.2.8 → 2.2.10');
+    const postable = renderTriageCard(holdCard);
+    const blocks = blocksFor(postable);
+    expect(blocks[0].type).toBe('header');
+    expect(blocks[0].text.text).toContain('⚠️ HOLD');
+    expect(postable.fallbackText).toBe('⚠️ HOLD: rack 2.2.8 → 2.2.10');
   });
 
   it('shows the version bump and risk class as fields', () => {
-    const { blocks } = renderTriageCard(holdCard);
-    const fields = (blocks[1] as any).fields.map((f: any) => f.text).join('\n');
+    const blocks = blocksFor(renderTriageCard(holdCard));
+    const fields = blocks[1].fields.map((f: any) => f.text).join('\n');
     expect(fields).toContain('rack 2.2.8 → 2.2.10');
     expect(fields).toContain('moderate');
   });
 
   it('quotes the cited changelog line with its version', () => {
-    const { blocks } = renderTriageCard(holdCard);
-    const quote = (blocks[3] as any).text.text;
+    const blocks = blocksFor(renderTriageCard(holdCard));
+    const quote = blocks[3].text.text;
     expect(quote).toContain('>Rack::Request#POST now returns an empty hash');
     expect(quote).toContain('2.2.9 release notes');
   });
 
   it('truncates over-long citations to stay video-legible', () => {
-    const { blocks } = renderTriageCard({
-      ...holdCard,
-      citation: { version: '2.2.9', quote: 'x'.repeat(500) },
-    });
-    const quote = (blocks[3] as any).text.text;
-    const quotedLine = quote.split('\n')[0];
+    const blocks = blocksFor(
+      renderTriageCard({ ...holdCard, citation: { version: '2.2.9', quote: 'x'.repeat(500) } }),
+    );
+    const quotedLine = blocks[3].text.text.split('\n')[0];
     expect(quotedLine.length).toBeLessThanOrEqual(202); // '>' + 200 chars + ellipsis
     expect(quotedLine.endsWith('…')).toBe(true);
   });
 
   it('omits the quote block when there is no citation', () => {
-    const { blocks } = renderTriageCard({ ...holdCard, verdict: 'NEEDS_REVIEW', citation: null });
-    const types = blocks.map((b: any) => b.type);
-    expect(types).toEqual(['header', 'section', 'section', 'context']);
-    expect((blocks[0] as any).text.text).toContain('🔍 NEEDS-REVIEW');
+    const blocks = blocksFor(renderTriageCard({ ...holdCard, verdict: 'NEEDS_REVIEW', citation: null }));
+    expect(blocks.map((b) => b.type)).toEqual(['header', 'section', 'section', 'context']);
+    expect(blocks[0].text.text).toContain('🔍 NEEDS-REVIEW');
   });
 
-  it('links the pull request in the context footer', () => {
-    const { blocks } = renderTriageCard(holdCard);
-    const context = (blocks.at(-1) as any).elements[0].text;
-    expect(context).toContain(holdCard.prUrl);
+  it('links the pull request in the muted context footer', () => {
+    const blocks = blocksFor(renderTriageCard(holdCard));
+    const footer = blocks.at(-1);
+    expect(footer.type).toBe('context');
+    expect(footer.elements[0].text).toContain(holdCard.prUrl);
   });
 
   it('escapes mrkdwn control characters in notes-derived content', () => {
-    const { blocks } = renderTriageCard({
-      ...holdCard,
-      reasoning: 'Watch out for <!channel> & <https://evil.example|fake links>.',
-      citation: { version: '2.2.9', quote: 'Fixed CVE <!channel> patch now <https://evil.example/creds|Upgrade>.' },
-    });
-    const reasoning = (blocks[2] as any).text.text;
-    const quote = (blocks[3] as any).text.text;
+    const blocks = blocksFor(
+      renderTriageCard({
+        ...holdCard,
+        reasoning: 'Watch out for <!channel> & <https://evil.example|fake links>.',
+        citation: { version: '2.2.9', quote: 'Fixed CVE <!channel> patch now <https://evil.example/creds|Upgrade>.' },
+      }),
+    );
+    const reasoning = blocks[2].text.text;
+    const quote = blocks[3].text.text;
     for (const rendered of [reasoning, quote]) {
       expect(rendered).not.toContain('<!channel>');
       expect(rendered).not.toContain('<https://evil.example');
@@ -78,19 +84,17 @@ describe('renderTriageCard', () => {
   });
 
   it('flattens multi-line citations into a single quote line', () => {
-    const { blocks } = renderTriageCard({
-      ...holdCard,
-      citation: { version: '2.2.9', quote: 'line one\nline two' },
-    });
-    const quote = (blocks[3] as any).text.text.split('\n')[0];
+    const blocks = blocksFor(renderTriageCard({ ...holdCard, citation: { version: '2.2.9', quote: 'line one\nline two' } }));
+    const quote = blocks[3].text.text.split('\n')[0];
     expect(quote).toBe('>line one line two');
   });
 });
 
 describe('renderHelloCard', () => {
   it('renders a header, body, and station footer', () => {
-    const { text, blocks } = renderHelloCard();
-    expect(text).toContain('Factory channel online');
-    expect(blocks.map((b: any) => b.type)).toEqual(['header', 'section', 'context']);
+    const postable = renderHelloCard();
+    const blocks = blocksFor(postable);
+    expect(postable.fallbackText).toContain('Factory channel online');
+    expect(blocks.map((b) => b.type)).toEqual(['header', 'section', 'context']);
   });
 });

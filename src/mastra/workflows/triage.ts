@@ -2,7 +2,7 @@ import type { Mastra } from '@mastra/core/mastra';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { VerdictSchema, enforceCitationRule } from '../agents/verdict';
-import { renderTriageCard, postToSlack } from '../../lib/slack';
+import { renderTriageCard } from '../../lib/slack';
 
 /**
  * The Station 1 pipeline: one run per Dependabot PR, so every PR gets
@@ -13,6 +13,10 @@ import { renderTriageCard, postToSlack } from '../../lib/slack';
  * Each triage runs in its own memory thread; after the card posts, the
  * Slack thread is bound to that memory thread and subscribed, so replies
  * ("why HOLD?") reach the agent with the notes it actually read.
+ *
+ * Cards post through the agent's Channels SDK (Card API), not raw Slack
+ * Web API calls — so card delivery now requires Channels to be configured
+ * (SLACK_BOT_TOKEN + SLACK_APP_TOKEN), same as thread Q&A. See ADR 003.
  */
 
 const triageInputSchema = z.object({
@@ -100,8 +104,6 @@ async function bindCardThread(
     },
   });
 
-  // Without Channels credentials the sdk is null: the binding above still
-  // lets a later @mention find this thread, but replies won't auto-flow.
   const sdk = mastra.getAgent('triageAgent').getChannels()?.sdk;
   if (!sdk) return false;
   await sdk.thread(externalThreadId).subscribe();
@@ -116,15 +118,29 @@ const postCardStep = createStep({
   execute: async ({ inputData, mastra }) => {
     const { verdict, threadId } = inputData;
     const logger = mastra.getLogger();
+
+    const sdk = mastra.getAgent('triageAgent').getChannels()?.sdk;
+    const channelId = process.env.SLACK_CHANNEL_ID;
+    const missing = !sdk
+      ? 'Slack Channels not configured (SLACK_APP_TOKEN missing, or not yet connected)'
+      : !channelId
+        ? 'SLACK_CHANNEL_ID is not set'
+        : null;
+    if (missing) {
+      logger?.error('Triage card delivery failed', { error: missing, verdict: verdict.verdict });
+      return { verdict, delivered: false, deliveryError: missing, threadBound: false };
+    }
+
     try {
-      const result = await postToSlack(renderTriageCard(verdict));
-      logger?.info('Triage card delivered', { ...result, verdict: verdict.verdict });
+      const { card, fallbackText } = renderTriageCard(verdict);
+      const sent = await sdk!.channel(`slack:${channelId}`).post({ card, fallbackText });
+      logger?.info('Triage card delivered', { channel: channelId, ts: sent.id, verdict: verdict.verdict });
 
       let threadBound = false;
       try {
-        threadBound = await bindCardThread(mastra, { threadId, ...result });
+        threadBound = await bindCardThread(mastra, { threadId, channel: channelId!, ts: sent.id });
         if (!threadBound) {
-          logger?.warn('Card thread not subscribed — replies need an @mention or Slack Channels credentials', { threadId });
+          logger?.warn('Card thread not subscribed — replies will go unanswered', { threadId });
         }
       } catch (err) {
         logger?.warn('Card thread binding failed', { threadId, error: err instanceof Error ? err.message : String(err) });

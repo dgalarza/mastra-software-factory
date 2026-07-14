@@ -1,5 +1,5 @@
 import { registerApiRoute } from '@mastra/core/server';
-import { postToSlack, renderHelloCard } from '../../lib/slack';
+import { renderHelloCard } from '../../lib/slack';
 
 /**
  * Manual end-to-end check for the Slack output surface:
@@ -13,11 +13,26 @@ export const slackHelloRoute = registerApiRoute('/dev/slack/hello', {
   method: 'POST',
   requiresAuth: false,
   handler: async (c) => {
-    const logger = c.get('mastra').getLogger();
+    const mastra = c.get('mastra');
+    const logger = mastra.getLogger();
+
+    const sdk = mastra.getAgent('triageAgent').getChannels()?.sdk;
+    const channelId = process.env.SLACK_CHANNEL_ID;
+    const missing = !sdk
+      ? 'Slack Channels not configured (SLACK_APP_TOKEN missing, or not yet connected)'
+      : !channelId
+        ? 'SLACK_CHANNEL_ID is not set'
+        : null;
+    if (missing) {
+      logger?.error('Hello card delivery failed', { error: missing });
+      return c.json({ delivered: false, error: missing }, 503);
+    }
+
     try {
-      const result = await postToSlack(renderHelloCard());
-      logger?.info('Hello card delivered to Slack', result);
-      return c.json({ delivered: true, ...result }, 200);
+      const { card, fallbackText } = renderHelloCard();
+      const sent = await sdk!.channel(`slack:${channelId}`).post({ card, fallbackText });
+      logger?.info('Hello card delivered to Slack', { channel: channelId, ts: sent.id });
+      return c.json({ delivered: true, channel: channelId, ts: sent.id }, 200);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger?.error('Hello card delivery failed', { error: message });

@@ -1,9 +1,11 @@
 # Slack Setup
 
 The factory posts recommendation cards to a Slack channel and answers
-follow-up questions in each card's thread (Mastra Channels). This guide
-creates the bot from the manifest in the repo root and wires the three
-environment variables that path needs.
+follow-up questions in each card's thread — both through Mastra Channels
+(`@chat-adapter/slack`) and its Card API, not a separate Slack client. This
+guide creates the bot from the manifest in the repo root and wires the
+three environment variables the whole path needs — all three are required;
+there's no bot-token-only fallback.
 
 Use a **dedicated workspace** if you're going to record or screen-share —
 keep real workspace content out of frame.
@@ -73,16 +75,18 @@ Each triage runs in its own Mastra memory thread (including the release
 notes its tools fetched). After posting the card, the workflow binds the
 Slack thread to that memory thread and subscribes it. Replies run the same
 agent in the same memory thread — so "why HOLD?" is answered from what the
-agent actually read, not reconstructed. Without `SLACK_APP_TOKEN`, cards
-still post; replies just go unheard.
+agent actually read, not reconstructed. Cards post through the same
+Channels SDK that answers replies, so `SLACK_APP_TOKEN` is required for
+card delivery too — there's no bot-token-only mode.
 
 ## Troubleshooting
 
 | Symptom | Meaning |
 |---|---|
-| `SLACK_BOT_TOKEN is not set` | `.env` not loaded or var missing — the dev server reads `.env` from the repo root |
-| `Slack API error: not_in_channel` | Bot isn't a member — `/invite @factory` in the channel |
-| `Slack API error: channel_not_found` | Wrong `SLACK_CHANNEL_ID` (use the `C0…` ID, not the channel name) |
-| `Slack API error: invalid_auth` | Token pasted wrong, or app was reinstalled (tokens rotate on reinstall) |
-| Card posts but thread replies get no answer | `SLACK_APP_TOKEN` missing (Channels not attached — check boot logs), app not reinstalled after manifest update, or the bot lacks `channels:history` |
+| `Slack Channels not configured (SLACK_APP_TOKEN missing, or not yet connected)` | `.env` missing `SLACK_APP_TOKEN`/`SLACK_BOT_TOKEN`, `.env` not loaded, or the socket hasn't finished connecting yet (check boot logs for "Slack socket mode connected") |
+| `SLACK_CHANNEL_ID is not set` | var missing from `.env` |
+| An error mentioning `not_in_channel` | Bot isn't a member — `/invite @factory` in the channel |
+| An error mentioning `channel_not_found` | Wrong `SLACK_CHANNEL_ID` (use the `C0…` ID, not the channel name) |
+| An error mentioning `invalid_auth` | Token pasted wrong, or app was reinstalled (tokens rotate on reinstall) |
+| Card posts but thread replies get no answer | App not reinstalled after manifest update (missing `channels:history`/`app_mentions:read`), or the bot lacks the scope |
 | Replies answered only after @mention | Thread subscription failed — look for "Card thread not subscribed" in the logs |
