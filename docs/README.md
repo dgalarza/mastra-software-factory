@@ -4,6 +4,8 @@ Index of project documentation. Start here to find what you need.
 
 ## Architecture
 - [ARCHITECTURE.md](../ARCHITECTURE.md) -- System overview, codemap, invariants, and boundaries
+- [Station 1 overview diagram](./architecture/station-1-overview.png) -- Dependabot trigger through webhook intake, triage workflow, Slack delivery, and the follow-up loop ([interactive HTML](./architecture/station-1-overview.html))
+- [Triage workflow diagram](./architecture/triage-workflow.png) -- Step-level view of `triage-workflow`: the agent's tool loop, the citation guardrail, and the Slack post/bind step ([interactive HTML](./architecture/triage-workflow.html))
 
 ## Domain Knowledge
 - [DOMAIN.md](./DOMAIN.md) -- The software factory domain: stations, the delegation ladder, verdicts, and the evidence rule

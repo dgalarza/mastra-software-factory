@@ -24,6 +24,23 @@ The primitive directories are populated as stations are built; the clean scaffol
 ### `.agents/skills/mastra/` -- Mastra framework skill
 Reference documentation for building with Mastra (core concepts, API references, migration guides, common errors). Load this before doing Mastra-specific work, per `AGENTS.md`.
 
+## Diagrams
+Rendered as PNGs below for GitHub; each has a matching self-contained HTML file in `docs/architecture/` (open directly in a browser, no build step or network needed -- fonts and assets are inlined).
+
+### Station 1, end to end
+Dependabot trigger through webhook intake, the triage workflow, Slack delivery, and the in-thread follow-up loop, plus where Station 1 sits in the planned station sequence.
+
+![Station 1 overview diagram](docs/architecture/station-1-overview.png)
+
+Interactive version: [`station-1-overview.html`](docs/architecture/station-1-overview.html)
+
+### `triage-workflow` step by step
+`src/mastra/workflows/triage.ts` itself: the two-step chain, the agent's read-only tool loop, the `enforceCitationRule` guardrail, and the Slack post/bind step.
+
+![Triage workflow diagram](docs/architecture/triage-workflow.png)
+
+Interactive version: [`triage-workflow.html`](docs/architecture/triage-workflow.html)
+
 ## Invariants
 
 - All agents, tools, workflows, and scorers must be registered in `src/mastra/index.ts` -- there is no auto-discovery.
