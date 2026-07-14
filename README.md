@@ -2,7 +2,7 @@
 
 A software factory built with [Mastra](https://mastra.ai/): a series of AI agents with progressively increasing delegated scope, built station by station in the open.
 
-Station 1 is a **read-only Dependabot dependency-triage agent** — it reads the release notes you never would, classifies the risk of each dependency bump, and posts a recommendation card to Slack. It has no write access anywhere: the GitHub App it uses is scoped read-only, so it *cannot* merge, comment, or mutate the repo even if prompted to.
+Station 1 is a **read-only Dependabot dependency-triage agent** — it reads the release notes, classifies the risk of each dependency bump, and posts a recommendation card to Slack. It has no write access anywhere: the GitHub App it uses is scoped read-only, so it *cannot* merge, comment, or mutate the repo even if prompted to.
 
 Checkpoints are tagged at episode act boundaries so you can follow the build commit by commit:
 
