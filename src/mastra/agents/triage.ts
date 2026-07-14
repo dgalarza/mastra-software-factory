@@ -26,22 +26,16 @@ export { VerdictSchema, type Verdict, enforceCitationRule } from './verdict';
 /**
  * Slack Channels attach, guarded: createSlackAdapter() throws at
  * construction when its credentials are missing, which would break server
- * boot — so only attach when a workable mode is configured.
- *   - SLACK_APP_TOKEN (xapp-)      → socket mode: no public URL needed; local dev
- *   - SLACK_SIGNING_SECRET         → webhook mode: /api/agents/triage-agent/channels/slack/webhook
- * Without either, cards still post (lib/slack.ts) but thread replies go unheard.
+ * boot — so only attach when SLACK_APP_TOKEN is configured.
+ *
+ * Socket mode only (no webhook mode): the bot connects out to Slack, so no
+ * public URL or tunnel is needed for Slack events, in dev or in production.
+ * Without SLACK_APP_TOKEN, cards still post (lib/slack.ts) but thread
+ * replies go unheard.
  */
 function slackChannels(): ChannelConfig | undefined {
-  if (!process.env.SLACK_BOT_TOKEN) return undefined;
-  const adapter = process.env.SLACK_APP_TOKEN
-    ? createSlackAdapter({ mode: 'socket' })
-    : process.env.SLACK_SIGNING_SECRET
-      ? createSlackAdapter()
-      : undefined;
-  if (!adapter) return undefined;
-  // tools: false — the built-in channel tools (add/remove reaction) would
-  // need reactions:* scopes; Station 1's bot stays minimal.
-  return { adapters: { slack: adapter }, tools: false };
+  if (!process.env.SLACK_BOT_TOKEN || !process.env.SLACK_APP_TOKEN) return undefined;
+  return { adapters: { slack: createSlackAdapter({ mode: 'socket' }) } };
 }
 
 export const triageAgent = new Agent({

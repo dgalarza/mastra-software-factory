@@ -6,15 +6,19 @@
 # then REINSTALL the app so the new scopes take effect.)
 # Full setup walkthrough: docs/guides/slack-setup.md
 #
-# Scope note: the factory posts recommendation cards and answers follow-up
-# questions in each card's thread — so beyond chat:write it needs to HEAR
-# mentions and thread replies (app_mentions:read, channels:history/read,
-# users:read). Still read-and-reply only: no reactions, no DMs, no private
-# channels. Widening scope is always deliberate, same as the GitHub App.
+# Scope note: the factory posts recommendation cards, answers follow-up
+# questions in each card's thread, and can react to messages (Mastra
+# Channels' built-in add/remove-reaction tools) — so beyond chat:write it
+# needs to HEAR mentions and thread replies (app_mentions:read,
+# channels:history/read, users:read) and to react (reactions:read/write).
+# Still no DMs, no private channels. Widening scope is always deliberate,
+# same as the GitHub App.
 #
-# Socket Mode is enabled so local development needs no public URL for Slack:
-# after installing, create an App-Level Token (Basic Information → App-Level
-# Tokens → Generate, scope connections:write) and set it as SLACK_APP_TOKEN.
+# Socket Mode only (no webhook mode, no request URL): the bot connects out to
+# Slack, so no public URL or tunnel is ever needed for Slack events — in dev
+# or in production. After installing, create an App-Level Token (Basic
+# Information → App-Level Tokens → Generate, scope connections:write) and
+# set it as SLACK_APP_TOKEN.
 
 _metadata:
   major_version: 1
@@ -37,6 +41,8 @@ oauth_config:
       - app_mentions:read
       - channels:history
       - channels:read
+      - reactions:read
+      - reactions:write
       - users:read
 
 settings:

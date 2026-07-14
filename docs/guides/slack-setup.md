@@ -13,7 +13,7 @@ keep real workspace content out of frame.
 1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App**
 2. Choose **From a manifest** → select your workspace
 3. Paste the contents of [`slack-app-manifest.yaml`](../../slack-app-manifest.yaml) (root of this repo)
-4. Review the summary — five bot scopes (post + hear mentions/replies, nothing else) and Socket Mode — then **Create**
+4. Review the summary — seven bot scopes (post, hear mentions/replies, react) and Socket Mode — then **Create**
 
 Already created the app from an older manifest? **App settings → App
 Manifest** → paste the current file → Save, then **reinstall** the app
@@ -29,10 +29,9 @@ rotates the bot token — update `SLACK_BOT_TOKEN`.
    Generate, and copy the token (starts with `xapp-`)
 
 The app-level token powers **Socket Mode**: the bot connects out to Slack
-over a WebSocket, so local development needs no public URL or tunnel for
-Slack events. (A deployed factory can use webhook mode instead — set
-`SLACK_SIGNING_SECRET` and point the app's event subscriptions at
-`/api/agents/triage-agent/channels/slack/webhook`.)
+over a WebSocket, so no public URL or tunnel is ever needed for Slack
+events — in local dev or in a deployed factory. This is the only mode the
+project uses; there's no webhook alternative to configure.
 
 ## 3. Create the channel and invite the bot
 
@@ -74,8 +73,8 @@ Each triage runs in its own Mastra memory thread (including the release
 notes its tools fetched). After posting the card, the workflow binds the
 Slack thread to that memory thread and subscribes it. Replies run the same
 agent in the same memory thread — so "why HOLD?" is answered from what the
-agent actually read, not reconstructed. Without `SLACK_APP_TOKEN` (or a
-signing secret), cards still post; replies just go unheard.
+agent actually read, not reconstructed. Without `SLACK_APP_TOKEN`, cards
+still post; replies just go unheard.
 
 ## Troubleshooting
 
