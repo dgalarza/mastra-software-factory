@@ -16,6 +16,9 @@ import { Card, CardText, Fields, Field, type CardElement } from 'chat';
 export type Verdict = 'MERGE' | 'HOLD' | 'NEEDS_REVIEW';
 export type RiskClass = 'low' | 'moderate' | 'high';
 
+import type { Verification } from './rspec';
+import type { ProbeSummary } from './probes';
+
 export interface TriageCard {
   verdict: Verdict;
   riskClass: RiskClass;
@@ -27,6 +30,10 @@ export interface TriageCard {
   /** Two sentences max — card-sized. */
   reasoning: string;
   prUrl: string;
+  /** Workflow-authored from the rspec artifact (see lib/rspec); Station 2 cards carry it. */
+  verification?: Verification;
+  /** Workflow-authored from the probe artifact (see lib/probes), when the audit tested the tests. */
+  probes?: ProbeSummary;
 }
 
 const VERDICT_LABEL: Record<Verdict, string> = {
@@ -68,6 +75,14 @@ export function renderTriageCard(card: TriageCard): Postable {
     CardText(escapeMrkdwn(card.reasoning)),
   ];
 
+  if (card.verification) {
+    children.push(CardText(renderVerificationLine(card.verification)));
+  }
+
+  if (card.probes?.ran) {
+    children.push(CardText(renderProbeLine(card.probes)));
+  }
+
   if (card.citation) {
     // Single line for the quote block: collapse whitespace, cap length,
     // then escape (escaping last so an entity is never split by truncation).
@@ -87,6 +102,41 @@ export function renderTriageCard(card: TriageCard): Postable {
     card: Card({ title: `${label} — ${card.dependency}`, children }),
     fallbackText: `${label}: ${bump}`,
   };
+}
+
+/**
+ * One line of executed evidence. This renders what the ARTIFACT said —
+ * the workflow builds it from the rspec JSON, never from agent claims.
+ */
+function renderVerificationLine(v: Verification): string {
+  if (v.result === 'error') {
+    return `🧪 *Tests:* not verified — ${escapeMrkdwn(v.errorReason ?? 'unknown error')}`;
+  }
+  const duration = v.durationSeconds != null ? ` in ${v.durationSeconds.toFixed(0)}s` : '';
+  if (v.result === 'fail') {
+    const first = v.failingExamples[0];
+    const example = first ? ` — first: ${escapeMrkdwn(first)}` : '';
+    return `🧪 *Tests:* ❌ ${v.failureCount}/${v.exampleCount} failed${duration}${example}`;
+  }
+  return `🧪 *Tests:* ✅ ${v.exampleCount} examples passed${duration}`;
+}
+
+/**
+ * One line of assertion evidence. Counts come from the probe helper's own
+ * records, so this states a fact rather than repeating an agent claim.
+ */
+function renderProbeLine(p: ProbeSummary): string {
+  // Inconclusive probes are reported, never counted as findings — saying
+  // "2 inconclusive" is honest; folding them into a failure count is not.
+  const inconclusive = p.errored.length > 0 ? `, ${p.errored.length} inconclusive` : '';
+  if (p.missed.length > 0) {
+    const first = p.missed[0];
+    return `🔬 *Assertions:* ⚠️ ${p.missed.length}/${p.total} stayed GREEN while broken — e.g. ${escapeMrkdwn(first.spec)}${inconclusive}`;
+  }
+  if (p.total === 0) {
+    return `🔬 *Assertions:* ⚠️ no probe completed (${p.errored.length} inconclusive) — assertion health unverified`;
+  }
+  return `🔬 *Assertions:* ✅ ${p.detected}/${p.total} still fail when their subject is removed${inconclusive}`;
 }
 
 export function renderHelloCard(): Postable {
