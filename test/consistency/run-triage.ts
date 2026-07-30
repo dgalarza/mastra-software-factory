@@ -7,6 +7,12 @@
  * flaky, freeze a different model/prompt — do not record.
  *
  *   pnpm consistency owner/repo prNumber [runs=10]
+ *
+ * Station 2 note: the agent now carries a Workspace, so each run performs a
+ * FULL sandbox audit (clone, bundle, rspec) — slower and metered. The
+ * planned restructure (one sandbox run cached as evidence, N verdict
+ * syntheses against it) lands with the payoff-PR selection; until then,
+ * prefer small N against the designated PR.
  */
 import { triageAgent, VerdictSchema, enforceCitationRule, type Verdict } from '../../src/mastra/agents/triage';
 
@@ -22,7 +28,7 @@ const results: Verdict[] = [];
 for (let i = 1; i <= runs; i++) {
   const result = await triageAgent.generate(
     `Triage Dependabot pull request #${prNumber} in ${repoArg}.`,
-    { structuredOutput: { schema: VerdictSchema }, maxSteps: 8 },
+    { structuredOutput: { schema: VerdictSchema }, maxSteps: 80 },
   );
   // Same rule the workflow applies — an uncited MERGE/HOLD must not be
   // able to look "green" here and post differently in production.
