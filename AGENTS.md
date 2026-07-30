@@ -59,7 +59,8 @@ See [docs/README.md](docs/README.md) for the documentation index. Guides will be
 When making significant architectural decisions, create an ADR in [docs/decisions/](docs/decisions/). Write one when choosing between competing approaches, adopting/rejecting a major dependency, or establishing a cross-cutting pattern (auth, logging, error handling).
 
 ## Known Gotchas
-- Audit sandboxes must NEVER be constructed with `checkpointName` -- that arms an automatic refresh which rewrites the pristine base with whatever the last triage left behind. Only `baseWorkspace()` (used by `pnpm prewarm`) may hold it. See ADR 004.
+- No sandbox may be constructed with `checkpointName` -- that arms an automatic refresh which rewrites the pristine base with whatever the last triage left behind. Audit sandboxes fork from an immutable template (`pnpm build-template`), which has no mutable base at all. See ADR 004.
+- Evidence is never agent-authored: `VerdictSchema` has no verification or probe field, and the workflow harvests the artifacts off the sandbox itself. Do not add a field the model can populate.
 - The triage agent's model and instructions are frozen for Episode 1 (`openai/gpt-5.2`) -- re-run `pnpm consistency` before and after any change to either. See [ADR 002](docs/decisions/002-workflow-intake-over-signals.md).
 - Dependabot PR titles on weft carry a `build(deps):` / `build(deps-dev):` prefix -- the parser in `src/lib/dependabot.ts` handles any conventional-commit prefix and bare titles; keep tests for both.
 - Custom server routes must NOT start with `/api` (reserved by Mastra) and need `requiresAuth: false` to accept unauthenticated webhooks.

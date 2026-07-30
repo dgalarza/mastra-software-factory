@@ -73,10 +73,10 @@ Autonomy isn't one dial you turn up. It scales per task with scope, reversibilit
 | # | Station | Scope | Status |
 |---|---------|-------|--------|
 | 1 | **Dependency triage** | Reads notes, recommends. No write access anywhere. | Shipped |
-| 2 | **Executed evidence** | Runs the suite in a per-triage sandbox; probes the assertions. | In the repo, episode in production |
-| 3 | **PR review** | Reads diffs, posts review notes. | Planned |
-| 4 | **Production-error triage** | Clusters and explains Sentry incidents. | Planned |
-| 5 | **Ticket to PR** | Scoped ticket → draft PR. | Planned |
+| 2 | **Executed evidence** | Same triage, now proving it: runs the suite in a per-triage sandbox and probes the assertions. | In the repo, episode in production |
+| 3 | **Production-error triage** | Clusters and explains Sentry incidents. | Planned |
+| 4 | **Ticket to PR** | Scoped ticket → draft PR. | Planned |
+| 5 | **Scaling** | Running the factory across repos. | Planned |
 
 Full domain model, glossary, and verdict rubric: [docs/DOMAIN.md](docs/DOMAIN.md).
 
@@ -133,3 +133,5 @@ This factory is built on camera, mistakes included. New stations land on [YouTub
 If your team is shipping agents into production and the reliability story isn't there yet, [book a free 30-minute intro call](https://cal.com/dgalarza/intro-call) or see [how I work with teams](https://www.damiangalarza.com/services).
 
 Built with [Mastra](https://mastra.ai/), who sponsor the series. The opinions and the mistakes are mine.
+
+[MIT licensed](LICENSE). Take whatever's useful.
