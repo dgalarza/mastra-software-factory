@@ -18,7 +18,7 @@ const holdCard: TriageCard = {
     quote: 'Rack::Request#POST now returns an empty hash for requests without a body.',
   },
   reasoning: 'The 2.2.9 notes change the return value of Rack::Request#POST for body-less requests. That is runtime behavior, not a fix.',
-  prUrl: 'https://github.com/dgalarza/creatorsignal/pull/42',
+  prUrl: 'https://github.com/dgalarza/weft/pull/42',
 };
 
 describe('renderTriageCard', () => {

@@ -47,7 +47,7 @@ describe('parseDependabotTitle', () => {
     });
   });
 
-  it('parses titles with a conventional-commit prefix (CreatorSignal style)', () => {
+  it('parses titles with a conventional-commit prefix (chore prefix)', () => {
     expect(parseDependabotTitle('chore(deps): bump anthropic from 1.54.1 to 1.55.0')).toEqual({
       recognized: true,
       grouped: false,
@@ -59,6 +59,17 @@ describe('parseDependabotTitle', () => {
       recognized: true,
       grouped: true,
       dependency: 'rubocop',
+    });
+  });
+
+  it("parses weft's build(deps-dev): prefix", () => {
+    const parsed = parseDependabotTitle('build(deps-dev): bump shoulda-matchers from 7.0.1 to 8.0.1');
+    expect(parsed).toEqual({
+      recognized: true,
+      grouped: false,
+      dependency: 'shoulda-matchers',
+      fromVersion: '7.0.1',
+      toVersion: '8.0.1',
     });
   });
 

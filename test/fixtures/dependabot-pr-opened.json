@@ -2,8 +2,8 @@
   "action": "opened",
   "number": 42,
   "pull_request": {
-    "url": "https://api.github.com/repos/dgalarza/creatorsignal/pulls/42",
-    "html_url": "https://github.com/dgalarza/creatorsignal/pull/42",
+    "url": "https://api.github.com/repos/dgalarza/weft/pulls/42",
+    "html_url": "https://github.com/dgalarza/weft/pull/42",
     "number": 42,
     "state": "open",
     "title": "Bump rack from 2.2.8 to 2.2.10",
@@ -28,8 +28,8 @@
   },
   "repository": {
     "id": 186853002,
-    "name": "creatorsignal",
-    "full_name": "dgalarza/creatorsignal",
+    "name": "weft",
+    "full_name": "dgalarza/weft",
     "private": true,
     "owner": {
       "login": "dgalarza",

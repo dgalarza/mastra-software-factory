@@ -59,8 +59,9 @@ See [docs/README.md](docs/README.md) for the documentation index. Guides will be
 When making significant architectural decisions, create an ADR in [docs/decisions/](docs/decisions/). Write one when choosing between competing approaches, adopting/rejecting a major dependency, or establishing a cross-cutting pattern (auth, logging, error handling).
 
 ## Known Gotchas
+- Audit sandboxes must NEVER be constructed with `checkpointName` -- that arms an automatic refresh which rewrites the pristine base with whatever the last triage left behind. Only `baseWorkspace()` (used by `pnpm prewarm`) may hold it. See ADR 004.
 - The triage agent's model and instructions are frozen for Episode 1 (`openai/gpt-5.2`) -- re-run `pnpm consistency` before and after any change to either. See [ADR 002](docs/decisions/002-workflow-intake-over-signals.md).
-- Dependabot PR titles on CreatorSignal carry a `chore(deps):` prefix -- the parser in `src/lib/dependabot.ts` handles both prefixed and bare conventions; keep tests for both.
+- Dependabot PR titles on weft carry a `build(deps):` / `build(deps-dev):` prefix -- the parser in `src/lib/dependabot.ts` handles any conventional-commit prefix and bare titles; keep tests for both.
 - Custom server routes must NOT start with `/api` (reserved by Mastra) and need `requiresAuth: false` to accept unauthenticated webhooks.
 - `createSlackAdapter()` throws at construction when its credentials are missing -- always attach `channels` conditionally (see `slackChannels()` in `src/mastra/agents/triage.ts`) so the server boots without Slack creds.
 - Slack thread ↔ memory thread binding needs ALL THREE metadata keys (`channel_platform`, `channel_externalThreadId`, `channel_externalChannelId`) set BEFORE `subscribe()` -- subscribe silently no-ops otherwise, and a missing key makes Channels create a duplicate thread with no triage context. See ADR 003.

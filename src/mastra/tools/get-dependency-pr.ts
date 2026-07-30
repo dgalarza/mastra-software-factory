@@ -11,7 +11,7 @@ export const getDependencyPr = createTool({
   description:
     'Fetch a Dependabot pull request and parse which dependency it bumps, from which version to which, plus the changed files. Grouped multi-dependency PRs are flagged rather than unpacked.',
   inputSchema: z.object({
-    repo: z.string().describe('Repository full name, e.g. "dgalarza/creatorsignal"'),
+    repo: z.string().describe('Repository full name, e.g. "dgalarza/weft"'),
     prNumber: z.number().int().describe('Pull request number'),
   }),
   outputSchema: z.object({
@@ -21,6 +21,7 @@ export const getDependencyPr = createTool({
     ecosystem: z.string().nullable().describe('Package ecosystem, e.g. "bundler"'),
     fromVersion: z.string().nullable(),
     toVersion: z.string().nullable(),
+    headRef: z.string().describe('The PR branch — what the sandbox audit checks out'),
     prUrl: z.string(),
     prBody: z.string().describe('PR description (truncated) — Dependabot embeds release-note excerpts here, often cut off'),
     files: z.array(
@@ -55,6 +56,7 @@ export const getDependencyPr = createTool({
       ecosystem: parsed.ecosystem,
       fromVersion: parsed.fromVersion,
       toVersion: parsed.toVersion,
+      headRef: pr.head.ref,
       prUrl: pr.html_url,
       prBody,
       files: files.map((f) => ({ path: f.filename, additions: f.additions, deletions: f.deletions })),

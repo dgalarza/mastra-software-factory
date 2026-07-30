@@ -9,7 +9,7 @@ const base: Verdict = {
   toVersion: '2.2.10',
   citation: { version: '2.2.9', quote: 'Fixed a header parsing bug.' },
   reasoning: 'Fixes only.',
-  prUrl: 'https://github.com/dgalarza/creatorsignal/pull/42',
+  prUrl: 'https://github.com/dgalarza/weft/pull/42',
 };
 
 describe('enforceCitationRule', () => {
