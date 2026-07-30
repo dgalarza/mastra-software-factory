@@ -1,7 +1,7 @@
 # Architecture
 
 ## Overview
-software-factory is a [Mastra](https://mastra.ai/) project implementing a *software factory*: a series of agents with progressively increasing delegated scope, built station by station. Station 1 is a read-only Dependabot dependency-triage agent. This document describes the structural conventions and will be extended as stations are added.
+software-factory is a [Mastra](https://mastra.ai/) project implementing a *software factory*: a series of agents with progressively increasing delegated scope, built station by station. Station 1 is a read-only Dependabot dependency-triage agent; Station 2 gives that same agent hands -- a per-triage Railway sandbox in which it runs the suite and probes the assertions, with the resulting evidence harvested and enforced in code. This document describes the structural conventions and will be extended as stations are added.
 
 ## Codemap
 
@@ -15,9 +15,13 @@ Key modules:
 - `workflows/` -- Multi-step workflow definitions built from `createStep`/`createWorkflow`
 - `scorers/` -- Eval scorers attached to agents for observability/quality grading
 - `routes/` -- Custom HTTP endpoints (`registerApiRoute`), e.g. the GitHub webhook intake
+- `workspace.ts` -- Station 2's sandbox lifecycle: acquires a per-triage Railway sandbox forked from the immutable template, delivers a short-lived clone token to tmpfs, and releases the sandbox unconditionally
 
 ### `src/lib/` -- Framework-free helpers
-Pure functions and external-service clients with no Mastra dependency (signature verification, Dependabot PR parsing). Unit-tested directly in `test/`.
+Pure functions and external-service clients with no Mastra dependency: signature verification, Dependabot PR parsing, version ranges, the GitHub and RubyGems clients, Slack card rendering, and Station 2's evidence parsers (`rspec.ts`, `probes.ts`) plus the sandbox image recipe (`sandbox/recipe.ts`). Unit-tested directly in `test/`.
+
+### `scripts/` -- Out-of-band operational scripts
+Run via `tsx`, not part of the server. `build-template.ts` builds the sandbox base image (Railway's 120s gateway makes building during `create` unworkable), `audit-queue.ts` lists open Dependabot PRs, `verify-workspace.ts` checks sandbox wiring.
 
 The primitive directories are populated as stations are built; the clean scaffold (tag `ep1-scaffold`) contains only the composition root.
 
@@ -48,6 +52,10 @@ Interactive version: [`triage-workflow.html`](docs/architecture/triage-workflow.
 - Observability is centrally configured in `index.ts` with a `SensitiveDataFilter` span processor -- sensitive data (passwords, tokens, keys) is redacted before export. Do not bypass this by logging raw request/response payloads elsewhere.
 - The `mastra dev`/`mastra build`/`mastra start` scripts (via `@mastra/core`) own the runtime. Custom HTTP endpoints are registered as `server.apiRoutes` entries (`registerApiRoute`) in `src/mastra/index.ts`, live under `src/mastra/routes/`, and must not use the reserved `/api` prefix.
 - Inbound webhook routes verify the request signature against the raw body bytes before any parsing or processing -- never "temporarily" skip this.
+- A verdict's evidence is never agent-authored. `VerdictSchema` deliberately has no verification or probe field; the workflow harvests the artifacts off the sandbox and builds those blocks itself. Do not add an evidence field the model can populate.
+- The honesty rules in `src/mastra/agents/verdict.ts` may only ever downgrade a verdict, never promote one, and they run in order: citation, evidence, probes.
+- No sandbox may be constructed with a `checkpointName`. `@mastra/railway` arms a refresh timer whenever one is set and captures live disk state before idle teardown, which rewrites the shared base with whatever the last triage left behind. Sandboxes fork from an immutable template instead, so the failure is unreachable rather than defended against. See ADR 004.
+- Exit codes are not evidence. Piping masks them; assert on parsed artifacts instead.
 - There is no ORM or hand-written SQL -- persistence goes through Mastra's storage abstraction only.
 
 ## Boundaries
