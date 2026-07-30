@@ -68,15 +68,14 @@ Interactive versions (self-contained HTML, no build step): [station overview](do
 
 ## The delegation ladder
 
-Autonomy isn't one dial you turn up. It scales per task with scope, reversibility, and blast radius, so each station earns more room than the last and only after the previous rung has earned trust.
+Autonomy isn't one dial you turn up. It scales per task with scope, reversibility, and blast radius, so each rung earns more room than the last and only after the previous one has earned trust.
 
-| # | Station | Scope | Status |
-|---|---------|-------|--------|
-| 1 | **Dependency triage** | Reads notes, recommends. No write access anywhere. | Shipped |
-| 2 | **Executed evidence** | Same triage, now proving it: runs the suite in a per-triage sandbox and probes the assertions. | In the repo, episode in production |
-| 3 | **Production-error triage** | Clusters and explains Sentry incidents. | Planned |
-| 4 | **Ticket to PR** | Scoped ticket → draft PR. | Planned |
-| 5 | **Scaling** | Running the factory across repos. | Planned |
+| Rung | What it's trusted with | Status |
+|------|------------------------|--------|
+| 1. **Dependency triage** | Reads release notes and recommends. No write access anywhere. | Shipped |
+| 2. **Executed evidence** | The same triage, now proving it: runs the suite in a per-triage sandbox and probes the assertions. | In the repo, episode in production |
+
+Rungs get numbered when they're built, not before. What comes next is chosen from what the last one exposed, which is the part a fixed roadmap would get wrong. Current candidates: production-error triage (Sentry), ticket-to-PR (Linear), review of human diffs, and running the factory across repos.
 
 Full domain model, glossary, and verdict rubric: [docs/DOMAIN.md](docs/DOMAIN.md).
 
@@ -90,6 +89,11 @@ Checkpoints are tagged at act boundaries, so you can read the diff between any t
 | `ep1-webhook` | GitHub webhook intake: signature verification, Dependabot filtering, PR parsing |
 | `ep1-channel` | Slack output surface: recommendation cards |
 | `ep1-complete` | Full triage loop: webhook → agent → card with cited evidence |
+| `ep2-scaffold` | Retargeted at weft, the repo Station 2 actually audits |
+| `ep2-sandbox` | Per-triage Railway sandbox forked from an immutable template |
+| `ep2-evidence` | The evidence rule: suite artifacts harvested off the sandbox and enforced in code |
+| `ep2-hands` | The investigation protocol, replacing a scripted audit |
+| `ep2-complete` | Assertion probes, the probe rule, and the record-ready consistency gate |
 
 ```bash
 git diff ep1-webhook..ep1-channel

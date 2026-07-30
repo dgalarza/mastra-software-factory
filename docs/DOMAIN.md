@@ -8,17 +8,22 @@ software-factory implements a **software factory**: a series of AI agents ("stat
 
 ## The Factory Map (stations)
 
-1. **Dependency triage** (Dependabot) — read-only recommendations from release notes *(built — Episode 1)*
-2. **Executed evidence** — the same triage, now proving its claims by running the suite in a per-triage sandbox *(built — Episode 2)*
-3. **Production-error triage** (Sentry) — clusters and explains incidents *(planned)*
-4. **Ticket-to-PR** (Linear) — scoped ticket → draft PR *(planned)*
-5. **Scaling** — running the factory across repos *(planned)*
+Stations are numbered as they are built, not as they are planned. The ladder's *shape* is the commitment — each rung bounded, each earned before the next — while its contents stay open, because the most useful next rung is usually the one the previous rung exposed.
+
+**Built:**
+
+1. **Dependency triage** (Dependabot) — read-only recommendations from release notes *(Episode 1)*
+2. **Executed evidence** — the same triage, now proving its claims by running the suite in a per-triage sandbox *(Episode 2)*
+
+**Candidates for the next rung**, in no fixed order: production-error triage (Sentry), ticket-to-PR (Linear), review of human-authored diffs, and scaling the factory across repos. Promoting one is a decision to record when it's made, not a plan to execute.
+
+A consequence worth stating plainly: unbuilt stations referred to by number in older ADRs were forward guesses, made before the rung existed. ADR 002 calls PR review "Station 2"; ADR 004 refers to "Station 4 (ticket-to-PR)" and "Station 5". Those numbers are historical, not authoritative — only built stations carry one.
 
 Station 2 is a rung, not a second assembly line. It reuses Station 1's intake, agent, and output surface; what grows is the *evidence* behind a verdict and the scope the agent is trusted with to produce it. More evidence earns more confidence, not automatically more autonomy — the factory still only recommends.
 
 ## Glossary
 
-- **Station** -- One rung of the factory: an agent (plus its tools, intake, and output surface) with an explicitly bounded scope of delegation.
+- **Station** -- One rung of the factory: an agent (plus its tools, intake, and output surface) with an explicitly bounded scope of delegation. Numbered only once built; see the factory map above.
 - **Triage** -- The factory's job so far: read the release notes for every version a Dependabot PR bumps across, establish whether the change reaches this app, prove it against the suite, and recommend — without touching the repo.
 - **Verdict** -- The structured output of a triage: `MERGE`, `HOLD`, or `NEEDS_REVIEW`, plus a risk class (`low`/`moderate`/`high`), card-sized reasoning, and a citation. Schema: `VerdictSchema` in `src/mastra/agents/verdict.ts`.
   - **MERGE** -- no change to existing behavior can reach this app. Either the notes show only additive or internal changes, or a breaking change exists and the agent has demonstrated it does not apply here.
