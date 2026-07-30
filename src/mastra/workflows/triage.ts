@@ -1,7 +1,13 @@
 import type { Mastra } from '@mastra/core/mastra';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
-import { VerdictSchema, enforceCitationRule } from '../agents/verdict';
+import { VerdictSchema, enforceCitationRule, enforceEvidenceRule, enforceProbeRule, type Verdict } from '../agents/verdict';
+import { acquireAuditSandbox, deliverCloneToken } from '../workspace';
+import type { RailwaySandbox } from '@mastra/railway';
+import { RequestContext } from '@mastra/core/di';
+import { PROBE_ARTIFACT_PATH, RSPEC_ARTIFACT_PATH } from '../../lib/sandbox/recipe';
+import { parseRspecArtifact, verificationError, VerificationSchema, type Verification } from '../../lib/rspec';
+import { parseProbeArtifact, NO_PROBES, type ProbeSummary } from '../../lib/probes';
 import { renderTriageCard } from '../../lib/slack';
 
 /**
@@ -20,12 +26,33 @@ import { renderTriageCard } from '../../lib/slack';
  */
 
 const triageInputSchema = z.object({
-  repo: z.string().describe('Repository full name, e.g. "dgalarza/creatorsignal"'),
+  repo: z.string().describe('Repository full name, e.g. "dgalarza/weft"'),
   prNumber: z.number().int(),
+});
+
+const ProbeRecordSchema = z.object({
+  source: z.string(),
+  spec: z.string(),
+  status: z.enum(['detected', 'missed', 'errored']),
+  exitCode: z.number().int(),
+  failureCount: z.number().int(),
+  note: z.string(),
+});
+
+const ProbeSummarySchema = z.object({
+  ran: z.boolean(),
+  total: z.number().int(),
+  detected: z.number().int(),
+  missed: z.array(ProbeRecordSchema),
+  errored: z.array(ProbeRecordSchema),
 });
 
 const triageOutputSchema = z.object({
   verdict: VerdictSchema,
+  /** Built from the rspec artifact by the workflow — never agent-authored. */
+  verification: VerificationSchema,
+  /** Built from the probe artifact by the workflow — never agent-authored. */
+  probes: ProbeSummarySchema,
   /** Memory thread the triage ran in — the card's Slack thread binds to it. */
   threadId: z.string(),
   repo: z.string(),
@@ -34,11 +61,48 @@ const triageOutputSchema = z.object({
 
 const deliverySchema = z.object({
   verdict: VerdictSchema,
+  verification: VerificationSchema,
+  probes: ProbeSummarySchema,
   delivered: z.boolean(),
   deliveryError: z.string().nullable(),
   /** True when the Slack thread is bound + subscribed for follow-up Q&A. */
   threadBound: z.boolean(),
 });
+
+/**
+ * Read the rspec artifact off THIS run's sandbox and parse it in code.
+ *
+ * Each triage forks its own sandbox from the immutable template, so an
+ * artifact found here can only have come from this run — no cross-run
+ * staleness to guard against, and concurrent triages cannot see each
+ * other's evidence. No sandbox (credentials absent) is an error
+ * verification: Episode 1 behavior, where verdicts remain possible but
+ * MERGE cannot claim proof it does not have.
+ */
+async function harvestVerification(sandbox: RailwaySandbox | undefined): Promise<Verification> {
+  if (!sandbox) return verificationError('no sandbox configured');
+  try {
+    const result = await sandbox.executeCommand('cat', [RSPEC_ARTIFACT_PATH], { timeout: 30_000 });
+    if (result.exitCode !== 0) return verificationError('rspec artifact not found in sandbox');
+    return parseRspecArtifact(result.stdout);
+  } catch (err) {
+    return verificationError(err instanceof Error ? err.message : String(err));
+  }
+}
+
+/** Same contract as harvestVerification, for the probe artifact. */
+async function harvestProbes(sandbox: RailwaySandbox | undefined): Promise<ProbeSummary> {
+  if (!sandbox) return NO_PROBES;
+  try {
+    const result = await sandbox.executeCommand('cat', [PROBE_ARTIFACT_PATH], { timeout: 30_000 });
+    // Absent artifact is not an error: most bumps never touch test tooling,
+    // so most triages legitimately run no probes.
+    if (result.exitCode !== 0) return NO_PROBES;
+    return parseProbeArtifact(result.stdout);
+  } catch {
+    return NO_PROBES;
+  }
+}
 
 const triageStep = createStep({
   id: 'triage',
@@ -47,7 +111,39 @@ const triageStep = createStep({
   outputSchema: triageOutputSchema,
   execute: async ({ inputData, mastra, runId }) => {
     const agent = mastra.getAgent('triageAgent');
+    const logger = mastra.getLogger();
     const threadId = `triage-${runId}`;
+
+    // One sandbox for this PR alone, forked from the immutable template.
+    // Acquisition is slot-bounded, so a Dependabot burst queues instead of
+    // stampeding. Undefined means credentials are absent — the triage still
+    // runs, read-only, and the evidence rule refuses to let it claim a MERGE.
+    const audit = await acquireAuditSandbox(runId).catch((err) => {
+      logger?.error('Could not acquire an audit sandbox', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return undefined;
+    });
+    if (!audit) logger?.warn('No audit sandbox — triaging on release notes alone');
+
+    try {
+    // Fresh short-lived clone credential for this triage (tmpfs — see
+    // workspace.ts). Non-fatal: without it the fetch fails and the
+    // evidence rule downgrades the verdict honestly.
+    // Belt and braces: a fresh sandbox should hold no evidence, but a base
+    // captured from a dirty state would smuggle a previous PR's artifacts in
+    // — which is precisely how PR #52 came to report PR #38's "7/7
+    // assertions verified" without ever running a probe. Deleting here makes
+    // "the artifact exists" mean "this run produced it", independent of
+    // whether the base was built cleanly.
+    if (audit) {
+      await audit.sandbox
+        .executeCommand('rm', ['-f', RSPEC_ARTIFACT_PATH, PROBE_ARTIFACT_PATH], { timeout: 30_000 })
+        .catch(() => undefined);
+    }
+    if (audit && !(await deliverCloneToken(audit.sandbox).catch(() => false))) {
+      logger?.warn('No clone token delivered — sandbox audit cannot fetch the PR');
+    }
     const result = await agent.generate(
       `Triage Dependabot pull request #${inputData.prNumber} in ${inputData.repo}.`,
       {
@@ -57,18 +153,68 @@ const triageStep = createStep({
           thread: { id: threadId, title: `Triage ${inputData.repo}#${inputData.prNumber}` },
           resource: inputData.repo,
         },
+        // The agent resolves its workspace from here, so its hands are
+        // THIS run's sandbox and no other's.
+        requestContext: new RequestContext([['workspace', audit?.workspace]]),
         structuredOutput: { schema: VerdictSchema },
-        maxSteps: 8,
+        // The investigation protocol is step-hungry: source reading,
+        // call-site greps, a baseline run, then a mutation probe per
+        // assertion (two commands each — break it, restore it). 8 starved
+        // the agent into returning no verdict at all on the first live run
+        // (PR #52); 30 does not cover probing a suite's worth of matchers.
+        maxSteps: 80,
       },
     );
-    const verdict = enforceCitationRule(result.object);
-    if (verdict !== result.object) {
+    // No structured verdict (step budget exhausted, refusal, provider
+    // hiccup) must degrade like every other missing evidence: a card the
+    // human sees, never a crashed step and a silently dropped triage.
+    const object = result.object as Verdict | undefined;
+    const raw: Verdict = object ?? {
+      verdict: 'NEEDS_REVIEW',
+      riskClass: 'moderate',
+      dependency: 'unknown',
+      fromVersion: 'unknown',
+      toVersion: 'unknown',
+      citation: null,
+      reasoning: 'The agent produced no structured verdict; triage requires human review.',
+      prUrl: `https://github.com/${inputData.repo}/pull/${inputData.prNumber}`,
+    };
+    const cited = enforceCitationRule(raw);
+    if (cited !== raw) {
       mastra.getLogger()?.warn('Uncited verdict downgraded to NEEDS_REVIEW', {
-        original: result.object.verdict,
-        dependency: verdict.dependency,
+        original: raw.verdict,
+        dependency: cited.dependency,
       });
     }
-    return { verdict, threadId, ...inputData };
+    // Station 2's honesty rule: the verdict must agree with the EXECUTED
+    // evidence — the artifact the suite wrote, read off the sandbox and
+    // parsed here in code. The agent's claims never author this block.
+    const [verification, probes] = await Promise.all([
+      harvestVerification(audit?.sandbox),
+      harvestProbes(audit?.sandbox),
+    ]);
+    const evidenced = enforceEvidenceRule(cited, verification);
+    // Probe rule runs last: an assertion that stayed green while its subject
+    // was broken is a finding about the SUITE and outranks the notes-driven
+    // verdict, which would otherwise describe the wrong problem.
+    const verdict = enforceProbeRule(evidenced, probes);
+    if (verdict !== cited) {
+      mastra.getLogger()?.warn('Verdict downgraded by evidence rule', {
+        original: cited.verdict,
+        result: verification.result,
+        reason: verification.errorReason,
+      });
+    }
+    return { verdict, verification, probes, threadId, ...inputData };
+    } finally {
+      // Unconditional: a leaked sandbox survives to its idle timeout, and a
+      // burst of leaks is how you discover the plan's concurrency cap.
+      await audit?.release().catch((err) =>
+        logger?.warn('Failed to release audit sandbox', {
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    }
   },
 });
 
@@ -116,8 +262,9 @@ const postCardStep = createStep({
   inputSchema: triageOutputSchema,
   outputSchema: deliverySchema,
   execute: async ({ inputData, mastra }) => {
-    const { verdict, threadId } = inputData;
+    const { verdict, verification, probes, threadId } = inputData;
     const logger = mastra.getLogger();
+    const undelivered = (deliveryError: string) => ({ verdict, verification, probes, delivered: false, deliveryError, threadBound: false });
 
     const sdk = mastra.getAgent('triageAgent').getChannels()?.sdk;
     const channelId = process.env.SLACK_CHANNEL_ID;
@@ -128,11 +275,11 @@ const postCardStep = createStep({
         : null;
     if (missing) {
       logger?.error('Triage card delivery failed', { error: missing, verdict: verdict.verdict });
-      return { verdict, delivered: false, deliveryError: missing, threadBound: false };
+      return undelivered(missing);
     }
 
     try {
-      const { card, fallbackText } = renderTriageCard(verdict);
+      const { card, fallbackText } = renderTriageCard({ ...verdict, verification, probes });
       const sent = await sdk!.channel(`slack:${channelId}`).post({ card, fallbackText });
       logger?.info('Triage card delivered', { channel: channelId, ts: sent.id, verdict: verdict.verdict });
 
@@ -146,13 +293,13 @@ const postCardStep = createStep({
         logger?.warn('Card thread binding failed', { threadId, error: err instanceof Error ? err.message : String(err) });
       }
 
-      return { verdict, delivered: true, deliveryError: null, threadBound };
+      return { verdict, verification, probes, delivered: true, deliveryError: null, threadBound };
     } catch (err) {
       // Keep the verdict inspectable in Studio even when delivery fails —
       // but fail loudly in the logs; a dropped card is a dropped triage.
       const message = err instanceof Error ? err.message : String(err);
       logger?.error('Triage card delivery failed', { error: message, verdict: verdict.verdict });
-      return { verdict, delivered: false, deliveryError: message, threadBound: false };
+      return undelivered(message);
     }
   },
 });
