@@ -47,6 +47,30 @@ export function getGithubClient(): Octokit {
   return cached;
 }
 
+/**
+ * Mint a short-lived installation access token for the read-only App —
+ * the credential the sandbox clones with. Expires in ~1 hour, scoped to
+ * the installation's repos, read-only by the App's permissions. Falls back
+ * to GITHUB_TOKEN (dev PAT) and then to null, in which case the audit's
+ * clone step fails and the evidence rule downgrades honestly.
+ */
+export async function mintInstallationToken(): Promise<string | null> {
+  const appId = process.env.GITHUB_APP_ID;
+  const privateKey = process.env.GITHUB_PRIVATE_KEY;
+  const installationId = process.env.GITHUB_INSTALLATION_ID;
+
+  if (appId && privateKey && installationId) {
+    const auth = createAppAuth({
+      appId: Number(appId),
+      privateKey: normalizePrivateKey(privateKey),
+      installationId: Number(installationId),
+    });
+    const { token } = await auth({ type: 'installation' });
+    return token;
+  }
+  return process.env.GITHUB_TOKEN ?? null;
+}
+
 /** Split "owner/name" — the form webhooks and tools pass around. */
 export function splitRepo(fullName: string): { owner: string; repo: string } {
   const [owner, repo] = fullName.split('/');

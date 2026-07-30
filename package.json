@@ -9,7 +9,8 @@
     "build": "mastra build",
     "start": "mastra start",
     "audit-queue": "tsx --env-file-if-exists=.env scripts/audit-queue.ts",
-    "consistency": "tsx --env-file-if-exists=.env test/consistency/run-triage.ts"
+    "consistency": "tsx --env-file-if-exists=.env test/consistency/run-triage.ts",
+    "build-template": "tsx --env-file-if-exists=.env scripts/build-template.ts"
   },
   "keywords": [],
   "author": "",
@@ -19,22 +20,23 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
-    "@chat-adapter/slack": "^4.33.0",
-    "@mastra/core": "^1.50.1",
-    "@mastra/duckdb": "^1.5.1",
-    "@mastra/evals": "^1.5.1",
-    "@mastra/libsql": "^1.15.1",
+    "@chat-adapter/slack": "^4.35.0",
+    "@mastra/core": "^1.54.0",
+    "@mastra/duckdb": "^1.5.2",
+    "@mastra/evals": "^1.6.0",
+    "@mastra/libsql": "^1.18.0",
     "@mastra/loggers": "^1.2.0",
-    "@mastra/memory": "^1.22.2",
-    "@mastra/observability": "^1.16.0",
+    "@mastra/memory": "^1.24.0",
+    "@mastra/observability": "^1.16.3",
+    "@mastra/railway": "^0.4.0",
     "@octokit/auth-app": "^8.2.0",
     "@octokit/rest": "^22.0.1",
-    "chat": "^4.33.0",
+    "chat": "^4.35.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
-    "mastra": "^1.18.2",
+    "mastra": "^1.20.3",
     "tsx": "^4.23.0",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
