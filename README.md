@@ -1,3 +1,13 @@
+<p align="center">
+  <a href="https://www.damiangalarza.com?utm_source=github&utm_medium=readme&utm_campaign=software-factory">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.damiangalarza.com/images/damian-galarza-logo-white-rgb.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.damiangalarza.com/images/damian-galarza-logo-full-color-rgb.svg">
+      <img alt="Damian Galarza" src="https://assets.damiangalarza.com/images/damian-galarza-logo-full-color-rgb.svg" width="400">
+    </picture>
+  </a>
+</p>
+
 # Software Factory
 
 **A Dependabot triage agent built with [Mastra](https://mastra.ai/), and an open build log for delegating real work to AI agents one station at a time.**
@@ -130,11 +140,11 @@ This repo is also an experiment in writing docs an agent can navigate. Start at 
 
 ## Who's building this
 
-I'm [Damian Galarza](https://www.damiangalarza.com), a fractional CTO and AI engineering consultant. I spent 15+ years shipping production software, scaled a regulated engineering org from 0 to 50 as CTO, and now help teams get their AI past the demo and into production without it falling over.
+I'm [Damian Galarza](https://www.damiangalarza.com?utm_source=github&utm_medium=readme&utm_campaign=software-factory), a fractional CTO and AI engineering consultant. I spent 15+ years shipping production software, scaled a regulated engineering org from 0 to 50 as CTO, and now help teams get their AI past the demo and into production without it falling over.
 
-This factory is built on camera, mistakes included. New stations land on [YouTube](https://www.youtube.com/@damian.galarza), and I write up what the build taught me in [the newsletter](https://www.damiangalarza.com/newsletter).
+This factory is built on camera, mistakes included. New stations land on [YouTube](https://www.youtube.com/@damian.galarza), and I write up what the build taught me in [the newsletter](https://www.damiangalarza.com/newsletter/?utm_source=github&utm_medium=readme&utm_campaign=software-factory).
 
-If your team is shipping agents into production and the reliability story isn't there yet, [book a free 30-minute intro call](https://cal.com/dgalarza/intro-call) or see [how I work with teams](https://www.damiangalarza.com/services).
+If your team is shipping agents into production and the reliability story isn't there yet, [book a free 30-minute intro call](https://cal.com/dgalarza/intro-call?utm_source=github&utm_medium=readme&utm_campaign=software-factory) or see [how I work with teams](https://www.damiangalarza.com/services/?utm_source=github&utm_medium=readme&utm_campaign=software-factory).
 
 Built with [Mastra](https://mastra.ai/), who sponsor the series. The opinions and the mistakes are mine.
 
